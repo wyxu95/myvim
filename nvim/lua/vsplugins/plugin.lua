@@ -1,4 +1,5 @@
 return {
+    require("plugins.surround"),
     {
         'vscode-neovim/vscode-multi-cursor.nvim',
         event = 'VeryLazy',

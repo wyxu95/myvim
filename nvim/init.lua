@@ -227,6 +227,23 @@ local function load_lazy()
     vim.opt.rtp:prepend(lazypath)
 end
 
+local function load_plugin_specs(module)
+    if not vim.g.myvim_config_root then
+        return module
+    end
+
+    -- lazy.nvim cannot discover plugin modules on Windows WSL UNC paths.
+    local plugin_specs = {}
+    local pattern = vim.g.myvim_config_root .. "/lua/" .. module .. "/*.lua"
+    for _, file in ipairs(vim.fn.glob(pattern, false, true)) do
+        local specs = dofile(file)
+        if type(specs) == "table" then
+            vim.list_extend(plugin_specs, specs)
+        end
+    end
+    return plugin_specs
+end
+
 local is_ssh = os.getenv("SSH_CONNECTION") or os.getenv("SSH_CLIENT")
 if is_ssh then
     vim.opt.cursorline = false
@@ -237,7 +254,7 @@ elseif vim.g.vscode then
     end
 
     load_lazy()
-    require("lazy").setup("vsplugins")
+    require("lazy").setup(load_plugin_specs("vsplugins"))
     -- Ensure lazy.nvim is on the runtimepath when running embedded in VSCode
     -- so subsequent calls to `require('lazy')` succeed.
     local vscode = require('vscode')
@@ -368,18 +385,7 @@ else
             colorscheme = { "tokyonight-storm" },
         },
     }
-    local plugin_specs = "plugins"
-    if vim.g.myvim_config_root then
-        plugin_specs = {}
-        local pattern = vim.g.myvim_config_root .. "/lua/plugins/*.lua"
-        for _, file in ipairs(vim.fn.glob(pattern, false, true)) do
-            local specs = dofile(file)
-            if type(specs) == "table" then
-                vim.list_extend(plugin_specs, specs)
-            end
-        end
-    end
-    require("lazy").setup(plugin_specs, opts)
+    require("lazy").setup(load_plugin_specs("plugins"), opts)
     local opts = { desc = "Move by display line", silent = true, noremap = true }
     vim.keymap.set({ "n", "v", "x" }, "j", "gj", opts)
     vim.keymap.set({ "n", "v", "x" }, "k", "gk", opts)
