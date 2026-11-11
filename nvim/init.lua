@@ -244,7 +244,38 @@ local function load_plugin_specs(module)
     return plugin_specs
 end
 
-local is_ssh = os.getenv("SSH_CONNECTION") or os.getenv("SSH_CLIENT")
+-- Neovide is a local GUI, so it always gets the full setup.
+local function detect_ssh()
+    if vim.g.neovide then
+        return false
+    end
+    local env_ssh = (os.getenv("SSH_CONNECTION") or os.getenv("SSH_CLIENT")) ~= nil
+    if not os.getenv("TMUX") then
+        return env_ssh
+    end
+    -- Inside tmux the pane env can come from an earlier client, so ask
+    -- whether the client attached right now runs under sshd.
+    local pid = tonumber(vim.fn.system({ "tmux", "display-message", "-p", "#{client_pid}" }))
+    if not pid then
+        return env_ssh
+    end
+    local procs = {}
+    for _, line in ipairs(vim.fn.systemlist({ "ps", "-axo", "pid=,ppid=,comm=" })) do
+        local p, ppid, comm = line:match("^%s*(%d+)%s+(%d+)%s+(.*)$")
+        if p then
+            procs[tonumber(p)] = { ppid = tonumber(ppid), comm = comm }
+        end
+    end
+    while procs[pid] do
+        if procs[pid].comm:find("sshd") then
+            return true
+        end
+        pid = procs[pid].ppid
+    end
+    return false
+end
+
+local is_ssh = detect_ssh()
 if is_ssh then
     vim.opt.cursorline = false
     vim.o.mouse = ""

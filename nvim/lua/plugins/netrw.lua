@@ -188,6 +188,7 @@ else
                 vim.keymap.set({ "n", "v" }, "<F2>", [[<cmd>Neotree toggle<CR>]], {desc = "Neotree Explorer"})
 
                 require("neo-tree").setup({
+                    close_if_last_window = true,
                     window = {
                         position = "left",
                         width = 35,
