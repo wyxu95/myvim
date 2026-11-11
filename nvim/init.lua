@@ -279,6 +279,10 @@ local is_ssh = detect_ssh()
 if is_ssh then
     vim.opt.cursorline = false
     vim.o.mouse = ""
+
+    -- Over SSH the file tree is the one plugin loaded.
+    load_lazy()
+    require("lazy").setup(require("plugins.netrw"))
 elseif vim.g.vscode then
     if vim.g.vscode_clipboard then
         vim.g.clipboard = vim.g.vscode_clipboard
